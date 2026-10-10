@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FITCARMIT - אפליקציית מעקב אימונים ומאמן</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for progress tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Rubik -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Rubik', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            pink: '#FF2E93',
+                            purple: '#A855F7',
+                            cyan: '#06B6D4',
+                            dark: '#0F172A',
+                            card: '#1E293B',
+                            accent: '#EC4899'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff2e93;
+        }
+
+        .hero-bg {
+            background-image: linear-gradient(to bottom, rgba(11, 15, 25, 0.6), rgba(11, 15, 25, 0.95)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <!-- TOP HEADER / NAV -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-pink to-brand-purple flex items-center justify-center shadow-lg shadow-brand-pink/30">
+                    <i class="fa-solid font-black fa-dumbbell text-xl text-white"></i>
+                </div>
+                <div>
+                    <span class="text-2xl font-black tracking-wider bg-gradient-to-r from-white via-pink-200 to-brand-pink bg-clip-text text-transparent">FITCARMIT</span>
+                    <span class="text-xs block text-slate-400 font-medium">מעקב אימונים ומאמן בלייב בענן</span>
+                </div>
+            </div>
+
+            <!-- View Switcher Tabs -->
+            <div class="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 flex items-center gap-1 shadow-inner">
+                <button id="btn-athlete-view" onclick="switchView('athlete')" class="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center gap-2 bg-gradient-to-r from-brand-pink to-brand-purple text-white shadow-md">
+                    <i class="fa-solid fa-user-ninja"></i>
+                    <span>אפליקציית מתאמנת</span>
+                </button>
+                <button id="btn-coach-view" onclick="switchView('coach')" class="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:text-white transition-all duration-300 flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                    <span>דשבורד מאמן</span>
+                    <span id="badge-trainee-count" class="bg-brand-pink/20 text-brand-pink text-xs px-2 py-0.5 rounded-full border border-brand-pink/30">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== ATHLETE VIEW ==================== -->
+    <main id="athlete-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full flex-grow">
+        
+        <!-- Hero Banner with Motivational Quote -->
+        <div class="relative rounded-3xl overflow-hidden mb-8 hero-bg border border-slate-800 p-6 md:p-10 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-pink/20 border border-brand-pink/40 text-brand-pink text-xs font-bold mb-4">
+                    <i class="fa-solid fa-fire text-amber-400 animate-pulse"></i> מוטיבציה יומית
+                </div>
+                <h1 id="motivational-quote" class="text-xl md:text-3xl font-extrabold text-white leading-tight mb-3">
+                    "העבודה הקשה שאת משקיעה היום היא התוצאה שתראי מחר."
+                </h1>
+                <p class="text-slate-300 text-xs md:text-sm font-light">
+                    ברוכה הבאה לאזור האישי שלך. הנתונים שתזיני כאן נשמרים בענן ומסתנכרנים ישירות למאמן שלך.
+                </p>
+            </div>
+            <button onclick="getRandomQuote()" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-4 py-2.5 rounded-2xl transition text-xs font-semibold flex items-center gap-2 self-stretch md:self-auto justify-center">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                <span>משפט מוטיבציה חדש</span>
+            </button>
+        </div>
+
+        <!-- Trainee Selector (Switch Active Trainee Context) -->
+        <div class="glass-panel rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 font-medium">מתאמנת מחוברת כעת:</div>
+                    <div id="current-athlete-name-display" class="text-base font-bold text-white">טוען...</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <label class="text-xs text-slate-400 whitespace-nowrap">החלף מתאמנת:</label>
+                <select id="select-active-athlete" onchange="changeActiveAthlete(this.value)" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-pink w-full sm:w-auto">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- LEFT COLUMN: Profile & Target Settings -->
+            <div class="space-y-6">
+                <!-- Personal Profile Card -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl">
+                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-user-gear text-brand-pink"></i>
+                            <span>פרופיל ויעדים אישיים</span>
+                        </h2>
+                        <span class="text-xs text-brand-pink bg-brand-pink/10 px-2.5 py-1 rounded-full border border-brand-pink/20">עדכון מדדים</span>
+                    </div>
+
+                    <form id="profile-form" onsubmit="saveProfileData(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">שם מלא</label>
+                            <input type="text" id="input-name" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">גיל (שנים)</label>
+                                <input type="number" id="input-age" min="12" max="99" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">גובה (ס"מ)</label>
+                                <input type="number" id="input-height" min="100" max="230" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">משקל נוכחי (ק"ג)</label>
+                                <input type="number" step="0.1" id="input-weight" min="30" max="250" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">משקל יעד (ק"ג)</label>
+                                <input type="number" step="0.1" id="input-target-weight" min="30" max="250" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">יעד אימונים שבועי</label>
+                            <select id="input-weekly-workouts" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                                <option value="2">2 אימונים בשבוע</option>
+                                <option value="3" selected>3 אימונים בשבוע</option>
+                                <option value="4">4 אימונים בשבוע</option>
+                                <option value="5">5 אימונים בשבוע</option>
+                                <option value="6">6 אימונים בשבוע</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-brand-pink to-brand-purple hover:opacity-90 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-brand-pink/20 flex items-center justify-center gap-2 mt-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>שמירה וסנכרון לענן</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Daily Calculated Health Metrics Panel -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                        <i class="fa-solid fa-calculator text-cyan-400"></i>
+                        <span>המלצות ומדדים מחושבים</span>
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- BMI -->
+                        <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">מדד BMI</span>
+                            <span id="metric-bmi" class="text-xl font-black text-white">0.0</span>
+                            <span id="metric-bmi-status" class="text-[10px] block mt-1 text-slate-400 font-semibold">-</span>
+                        </div>
+
+                        <!-- Daily Calories -->
+                        <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">קלוריות יומיות</span>
+                            <span id="metric-calories" class="text-xl font-black text-brand-pink">0</span>
+                            <span class="text-[10px] text-slate-400 block mt-1">לפי היעד שלך</span>
+                        </div>
+
+                        <!-- Water Intake -->
+                        <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">המלצת מים</span>
+                            <span id="metric-water" class="text-xl font-black text-cyan-400">0.0L</span>
+                            <span class="text-[10px] text-slate-400 block mt-1">ליטרים ליום</span>
+                        </div>
+
+                        <!-- Target Steps -->
+                        <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">יעד צעדים</span>
+                            <span id="metric-steps" class="text-xl font-black text-emerald-400">8,000</span>
+                            <span class="text-[10px] text-slate-400 block mt-1">צעדים ביום</span>
+                        </div>
+                    </div>
+
+                    <!-- AI Nutrition Tip Box -->
+                    <div class="p-4 rounded-2xl bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/20 text-xs leading-relaxed text-purple-200">
+                        <div class="font-bold mb-1 text-purple-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> טיפ תזונה מותאם אישית:
+                        </div>
+                        <p id="personalized-nutrition-tip">
+                            הזיני את נתוניך כדי לקבל המלצה מותאמת אישית ליעד המשקל שלך.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Coach Notes For Athlete -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-comment-dots text-brand-pink"></i>
+                        <span>משוב והערות מהמאמן</span>
+                    </h3>
+                    <div id="athlete-coach-feedback" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 italic min-h-[80px]">
+                        עדיין אין הערות חדשות מהמאמן.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT/MAIN COLUMN: Progress Trackers & Logs -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Daily Quick Actions Bar (Steps Counter & Workout Logging) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Steps Counter Card -->
+                    <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xs font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-shoe-prints text-emerald-400"></i> מעקב צעדים יומי
+                                </span>
+                                <span id="step-date" class="text-xs text-slate-400">היום</span>
+                            </div>
+
+                            <div class="flex items-baseline justify-between mb-2">
+                                <span id="current-step-count" class="text-2xl font-black text-white">0</span>
+                                <span id="target-step-display" class="text-xs text-slate-400">מתוך 8,000 צעדים</span>
+                            </div>
+
+                            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden mb-4">
+                                <div id="step-progress-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full w-0 transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input type="number" id="input-steps-add" placeholder="+ הוסף צעדים" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400">
+                            <button onclick="addSteps()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl transition text-xs whitespace-nowrap">
+                                עדכן
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Workout Card -->
+                    <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-square-plus text-brand-pink"></i> תיעוד אימון חדש
+                                </span>
+                                <span class="text-xs text-brand-pink font-semibold">שמירה ליומן</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <input type="text" id="input-workout-type" placeholder="סוג האימון (כוח, אירובי, פילאטיס)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-pink">
+                                <div class="flex gap-2">
+                                    <input type="number" id="input-workout-duration" placeholder="משך (דקות)" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-pink">
+                                    <input type="text" id="input-workout-notes" placeholder="הערות / משקלים" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-pink">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="logWorkout()" class="mt-3 w-full bg-slate-800 hover:bg-brand-pink hover:text-white border border-slate-700 text-slate-200 font-bold py-2 rounded-xl transition text-xs flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> הוסף אימון ליומן
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Weight Progress Chart Card -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-brand-purple"></i>
+                                <span>גרף מעקב משקל לאורך זמן</span>
+                            </h3>
+                            <p class="text-xs text-slate-400">התקדמות אישית לקראת משקל היעד</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" step="0.1" id="input-new-weight-log" placeholder="משקל היום (ק&quot;ג)" class="w-32 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-purple">
+                            <button onclick="addWeightEntry()" class="bg-brand-purple hover:bg-purple-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">
+                                עדכן
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="relative h-60 w-full">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Workouts History Table -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
+                        <i class="fa-solid fa-list-check text-cyan-400"></i>
+                        <span>היסטוריית אימונים שביצעת</span>
+                    </h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800 pb-2">
+                                    <th class="pb-3 pr-2">תאריך</th>
+                                    <th class="pb-3">סוג אימון</th>
+                                    <th class="pb-3">משך</th>
+                                    <th class="pb-3">הערות</th>
+                                    <th class="pb-3 pl-2">פעולה</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workout-history-tbody" class="divide-y divide-slate-800/50 text-slate-300">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Progress Photos Gallery Section -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-camera text-brand-pink"></i>
+                                <span>תמונות התקדמות ותהליך</span>
+                            </h3>
+                            <p class="text-xs text-slate-400">העלי תמונות כדי לראות את השינוי הפיזי שלך</p>
+                        </div>
+
+                        <label class="cursor-pointer bg-slate-800 hover:bg-brand-pink hover:text-white text-slate-200 border border-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>העלי תמונה</span>
+                            <input type="file" id="input-photo-upload" accept="image/*" onchange="handlePhotoUpload(event)" class="hidden">
+                        </label>
+                    </div>
+
+                    <div id="progress-photos-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
+                        <!-- Dynamic Photos -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ==================== COACH DASHBOARD VIEW ==================== -->
+    <main id="coach-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full flex-grow hidden">
+        
+        <!-- Dashboard Overview Header Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+            <div class="glass-panel rounded-3xl p-6 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-400 font-medium block mb-1">סה"כ מתאמנות במערכת</span>
+                    <span id="coach-total-trainees" class="text-3xl font-black text-white">0</span>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-brand-pink/20 text-brand-pink flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-400 font-medium block mb-1">סה"כ אימונים מתועדים</span>
+                    <span id="coach-total-workouts" class="text-3xl font-black text-cyan-400">0</span>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-person-running"></i>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-400 font-medium block mb-1">ממוצע צעדים יומי</span>
+                    <span id="coach-avg-steps" class="text-3xl font-black text-emerald-400">0</span>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-shoe-prints"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trainees Control Bar & Search -->
+        <div class="glass-panel rounded-3xl p-6 border border-slate-800 shadow-xl mb-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-address-book text-brand-pink"></i>
+                        <span>רשימת מתאמנות ומעקב בזמן אמת</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">לחץ על כרטיס מתאמנת לצפייה מלאה בפרופיל, תמונות והערות</p>
+                </div>
+
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-500 text-xs"></i>
+                        <input type="text" id="search-trainee-input" onkeyup="filterTrainees()" placeholder="חפש מתאמנת..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pr-9 pl-4 py-2 text-xs text-white focus:outline-none focus:border-brand-pink">
+                    </div>
+
+                    <button onclick="openAddTraineeModal()" class="bg-gradient-to-r from-brand-pink to-brand-purple hover:opacity-90 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>הוסף מתאמנת</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trainees Cards Grid -->
+            <div id="trainees-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic cards -->
+            </div>
+        </div>
+
+        <!-- Coach Trainee Detail Modal / Full Profile Inspector -->
+        <div id="trainee-detail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="glass-panel max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-8 border border-slate-700 shadow-2xl relative space-y-6">
+                <button onclick="closeTraineeModal()" class="absolute top-6 left-6 text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <!-- Header Info -->
+                <div class="flex items-center gap-4 border-b border-slate-800 pb-6">
+                    <div id="modal-trainee-avatar" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-pink to-purple-600 flex items-center justify-center text-white text-xl font-black shadow-lg">
+                        M
+                    </div>
+                    <div>
+                        <h2 id="modal-trainee-name" class="text-xl font-black text-white">מיכל כהן</h2>
+                        <div class="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                            <span>גיל: <strong id="modal-trainee-age" class="text-slate-200">28</strong></span>
+                            <span>גובה: <strong id="modal-trainee-height" class="text-slate-200">168 ס"מ</strong></span>
+                            <span>יעד אימונים: <strong id="modal-trainee-target-workouts" class="text-brand-pink">4 בשבוע</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 block mb-1">משקל נוכחי</span>
+                        <span id="modal-trainee-weight" class="text-lg font-bold text-white">65 ק"ג</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 block mb-1">משקל יעד</span>
+                        <span id="modal-trainee-target-weight" class="text-lg font-bold text-brand-pink">60 ק"ג</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 block mb-1">BMR מחושב</span>
+                        <span id="modal-trainee-bmr" class="text-lg font-bold text-cyan-400">1420</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 block mb-1">צעדים היום</span>
+                        <span id="modal-trainee-steps" class="text-lg font-bold text-emerald-400">8,500</span>
+                    </div>
+                </div>
+
+                <!-- Coach Note Edit Section -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-brand-pink"></i>
+                        <span>רשום הערה / הנחיה אישית למתאמנת:</span>
+                    </label>
+                    <textarea id="modal-coach-note-input" rows="3" placeholder="כתוב כאן חיזוק חיובי, דגשים לתזונה או דגשי אימון..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-pink"></textarea>
+                    <button onclick="saveCoachNote()" class="bg-brand-pink hover:bg-pink-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                        שמור והעבר בלייב למתאמנת
+                    </button>
+                </div>
+
+                <!-- Photos Section in Modal -->
+                <div>
+                    <h3 class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-images text-purple-400"></i>
+                        <span>תמונות התקדמות של המתאמנת</span>
+                    </h3>
+                    <div id="modal-trainee-photos" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <!-- Dynamic -->
+                    </div>
+                </div>
+
+                <!-- Workouts History in Modal -->
+                <div>
+                    <h3 class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-dumbbell text-cyan-400"></i>
+                        <span>יומן אימונים אחרון</span>
+                    </h3>
+                    <div id="modal-trainee-workouts" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Add Trainee Modal -->
+        <div id="add-trainee-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="glass-panel max-w-md w-full rounded-3xl p-6 border border-slate-700 shadow-2xl relative space-y-4">
+                <button onclick="closeAddTraineeModal()" class="absolute top-5 left-5 text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-brand-pink"></i>
+                    <span>הוספת מתאמנת חדשה למערכת</span>
+                </h3>
+
+                <form onsubmit="addNewTraineeFromModal(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">שם מלא</label>
+                        <input type="text" id="new-trainee-name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-300 mb-1">גיל</label>
+                            <input type="number" id="new-trainee-age" value="25" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-300 mb-1">גובה (ס"מ)</label>
+                            <input type="number" id="new-trainee-height" value="165" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-300 mb-1">משקל נוכחי (ק"ג)</label>
+                            <input type="number" step="0.1" id="new-trainee-weight" value="68" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-300 mb-1">משקל יעד (ק"ג)</label>
+                            <input type="number" step="0.1" id="new-trainee-target-weight" value="62" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-brand-pink to-brand-purple text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg mt-2">
+                        צור פרופיל מתאמנת בענן
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Firebase Cloud Sync Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'fitcarmit-app';
+        let db = null;
+        let auth = null;
+
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate and start live listener
+                (async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch(e) {
+                        await signInAnonymously(auth).catch(() => {});
+                    }
+
+                    // Listen to trainees collection in real time
+                    const traineesRef = collection(db, 'artifacts', appId, 'public', 'data', 'trainees');
+                    onSnapshot(traineesRef, (snapshot) => {
+                        const fetched = [];
+                        snapshot.forEach((doc) => {
+                            fetched.push({ id: doc.id, ...doc.data() });
+                        });
+
+                        if (fetched.length > 0) {
+                            window.trainees = fetched;
+                            window.populateTraineeSelect();
+                            window.updateAthleteUI();
+                            window.updateCoachUI();
+                        } else {
+                            // Seed initial trainees into Firestore if empty
+                            window.INITIAL_TRAINEES.forEach(t => {
+                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'trainees', t.id), t);
+                            });
+                        }
+                    }, (err) => {
+                        console.warn("Firestore error, falling back to local state:", err);
+                    });
+                })();
+            } catch (err) {
+                console.warn("Firebase initialization skipped:", err);
+            }
+        }
+
+        // Global sync function attached to window
+        window.saveTraineeToCloud = async function(trainee) {
+            if (db && auth && auth.currentUser) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'trainees', trainee.id);
+                    await setDoc(docRef, trainee, { merge: true });
+                } catch(err) {
+                    console.error("Cloud save error:", err);
+                }
+            } else {
+                localStorage.setItem('fitcarmit_trainees_data', JSON.stringify(window.trainees));
+            }
+        };
+
+        window.deleteTraineeFromCloud = async function(traineeId) {
+            if (db && auth && auth.currentUser) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'trainees', traineeId));
+                } catch(e) {}
+            }
+        };
+    </script>
+
+    <script>
+        const MOTIVATIONAL_QUOTES = [
+            '"העבודה הקשה שאת משקיעה היום היא התוצאה שתראי מחר."',
+            '"שינוי אמיתי אינו קורה ביום אחד, אלא בכל יום מחדש."',
+            '"גופך יכול לעמוד כמעט בכל דבר, זו רק המחשבה שאת צריכה לשכנע."',
+            '"אל תסתכלי על כמה נשאר ללכת, תסתכלי על כמה רחוק כבר הגעת."',
+            '"אימון קשה בונה אופי חזק. את חזקה יותר ממה שאת חושבת!"'
+        ];
+
+        const INITIAL_TRAINEES = [
+            {
+                id: 'trainee_1',
+                name: 'מיכל כהן',
+                age: 28,
+                height: 168,
+                weight: 66.5,
+                targetWeight: 60,
+                weeklyWorkouts: 4,
+                stepsToday: 8420,
+                coachNote: 'עבודה מצוינת השבוע! להמשיך להקפיד על שתיית 2.5 ליטר מים ביום.',
+                weightHistory: [
+                    { date: '2026-09-01', weight: 70.0 },
+                    { date: '2026-09-15', weight: 68.5 },
+                    { date: '2026-10-01', weight: 67.2 },
+                    { date: '2026-10-10', weight: 66.5 }
+                ],
+                workouts: [
+                    { id: 1, date: '10/10/2026', type: 'אימון כוח פלג גוף עליון', duration: 50, notes: 'עליתי במשקלי עבודה בסקואט' },
+                    { id: 2, date: '08/10/2026', type: 'אינטרוולים & אירובי', duration: 40, notes: 'דופק גבוה, הרגשה מעולה' }
+                ],
+                photos: [
+                    { id: 'p1', url: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600&auto=format&fit=crop', date: '01/09/2026' },
+                    { id: 'p2', url: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop', date: '01/10/2026' }
+                ]
+            },
+            {
+                id: 'trainee_2',
+                name: 'דנית לוי',
+                age: 32,
+                height: 162,
+                weight: 71.0,
+                targetWeight: 64,
+                weeklyWorkouts: 3,
+                stepsToday: 6200,
+                coachNote: 'שימי לב שחסר לך אימון אחד השבוע כדי להגיע ליעד. את מסוגלת!',
+                weightHistory: [
+                    { date: '2026-09-10', weight: 73.5 },
+                    { date: '2026-09-25', weight: 72.1 },
+                    { date: '2026-10-08', weight: 71.0 }
+                ],
+                workouts: [
+                    { id: 1, date: '09/10/2026', type: 'אימון פילאטיס מכשירים', duration: 60, notes: 'עבודה על שרירי ליבה' }
+                ],
+                photos: [
+                    { id: 'p3', url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=600&auto=format&fit=crop', date: '10/09/2026' }
+                ]
+            }
+        ];
+
+        window.INITIAL_TRAINEES = INITIAL_TRAINEES;
+        window.trainees = [];
+        let activeTraineeId = 'trainee_1';
+        let weightChartInstance = null;
+        let selectedModalTraineeId = null;
+
+        window.onload = function() {
+            const stored = localStorage.getItem('fitcarmit_trainees_data');
+            if (stored) {
+                try {
+                    window.trainees = JSON.parse(stored);
+                } catch(e) {
+                    window.trainees = INITIAL_TRAINEES;
+                }
+            } else {
+                window.trainees = INITIAL_TRAINEES;
+            }
+
+            populateTraineeSelect();
+            updateAthleteUI();
+            updateCoachUI();
+        };
+
+        function getActiveTrainee() {
+            return window.trainees.find(t => t.id === activeTraineeId) || window.trainees[0];
+        }
+
+        function switchView(view) {
+            const athleteBtn = document.getElementById('btn-athlete-view');
+            const coachBtn = document.getElementById('btn-coach-view');
+            const athleteView = document.getElementById('athlete-view');
+            const coachView = document.getElementById('coach-view');
+
+            if (view === 'athlete') {
+                athleteView.classList.remove('hidden');
+                coachView.classList.add('hidden');
+
+                athleteBtn.className = "px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center gap-2 bg-gradient-to-r from-brand-pink to-brand-purple text-white shadow-md";
+                coachBtn.className = "px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:text-white transition-all duration-300 flex items-center gap-2";
+                
+                updateAthleteUI();
+            } else {
+                athleteView.classList.add('hidden');
+                coachView.classList.remove('hidden');
+
+                coachBtn.className = "px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center gap-2 bg-gradient-to-r from-brand-pink to-brand-purple text-white shadow-md";
+                athleteBtn.className = "px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:text-white transition-all duration-300 flex items-center gap-2";
+
+                updateCoachUI();
+            }
+        }
+
+        window.populateTraineeSelect = function() {
+            const select = document.getElementById('select-active-athlete');
+            if (!select) return;
+            select.innerHTML = '';
+            window.trainees.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.name;
+                if (t.id === activeTraineeId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            const countBadge = document.getElementById('badge-trainee-count');
+            if (countBadge) countBadge.textContent = window.trainees.length;
+        };
+
+        function changeActiveAthlete(id) {
+            activeTraineeId = id;
+            updateAthleteUI();
+        }
+
+        window.updateAthleteUI = function() {
+            const trainee = getActiveTrainee();
+            if (!trainee) return;
+
+            document.getElementById('current-athlete-name-display').textContent = trainee.name;
+
+            document.getElementById('input-name').value = trainee.name;
+            document.getElementById('input-age').value = trainee.age;
+            document.getElementById('input-height').value = trainee.height;
+            document.getElementById('input-weight').value = trainee.weight;
+            document.getElementById('input-target-weight').value = trainee.targetWeight;
+            document.getElementById('input-weekly-workouts').value = trainee.weeklyWorkouts;
+
+            // Calculations
+            const heightInMeters = trainee.height / 100;
+            const bmi = (trainee.weight / (heightInMeters * heightInMeters)).toFixed(1);
+            document.getElementById('metric-bmi').textContent = bmi;
+            
+            let bmiStatus = "תקין";
+            if (bmi < 18.5) bmiStatus = "תת משקל";
+            else if (bmi >= 25 && bmi < 30) bmiStatus = "משקל עודף";
+            else if (bmi >= 30) bmiStatus = "השמנה";
+            document.getElementById('metric-bmi-status').textContent = bmiStatus;
+
+            const bmr = (10 * trainee.weight) + (6.25 * trainee.height) - (5 * trainee.age) - 161;
+            let activityMultiplier = trainee.weeklyWorkouts >= 5 ? 1.55 : 1.375;
+            let tdee = bmr * activityMultiplier;
+            let targetCalories = Math.round(tdee);
+
+            if (trainee.targetWeight < trainee.weight) {
+                targetCalories = Math.round(tdee - 400);
+            } else if (trainee.targetWeight > trainee.weight) {
+                targetCalories = Math.round(tdee + 300);
+            }
+            document.getElementById('metric-calories').textContent = targetCalories.toLocaleString();
+
+            const waterLiters = ((trainee.weight * 0.035) + (trainee.weeklyWorkouts * 0.1)).toFixed(1);
+            document.getElementById('metric-water').textContent = `${waterLiters}L`;
+
+            const diff = (trainee.weight - trainee.targetWeight).toFixed(1);
+            let tipText = "";
+            if (diff > 0) {
+                tipText = `כדי לרדת ${diff} ק"ג נוספים, הקפידי על צריכה של כ-${targetCalories} קלוריות ביום ושלבי לפחות 25-30 גרם חלבון בכל ארוחה מרכזית.`;
+            } else if (diff < 0) {
+                tipText = `כדי לעלות כ-${Math.abs(diff)} ק"ג במסת שריר איכותית, הקפידי על ${targetCalories} קלוריות ואימוני כוח עקביים.`;
+            } else {
+                tipText = `את נמצאת במשקל היעד המבוקש! הקפידי על מאזן קלורי ניטרלי ואימונים שגרתיים.`;
+            }
+            document.getElementById('personalized-nutrition-tip').textContent = tipText;
+
+            // Steps Progress
+            const steps = trainee.stepsToday || 0;
+            document.getElementById('current-step-count').textContent = steps.toLocaleString();
+            const stepPercent = Math.min(100, Math.round((steps / 8000) * 100));
+            document.getElementById('step-progress-bar').style.width = `${stepPercent}%`;
+
+            document.getElementById('athlete-coach-feedback').textContent = trainee.coachNote || 'אין הערות עדיין.';
+
+            renderWeightChart(trainee);
+            renderWorkoutHistory(trainee);
+            renderProgressPhotos(trainee);
+        };
+
+        function renderWeightChart(trainee) {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const history = trainee.weightHistory || [];
+            const labels = history.map(h => h.date);
+            const data = history.map(h => h.weight);
+
+            if (weightChartInstance) {
+                weightChartInstance.destroy();
+            }
+
+            weightChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'משקל (ק"ג)',
+                            data: data,
+                            borderColor: '#FF2E93',
+                            backgroundColor: 'rgba(255, 46, 147, 0.15)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#A855F7',
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'משקל יעד',
+                            data: Array(labels.length).fill(trainee.targetWeight),
+                            borderColor: '#06B6D4',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Rubik' } } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        function renderWorkoutHistory(trainee) {
+            const tbody = document.getElementById('workout-history-tbody');
+            tbody.innerHTML = '';
+
+            if (!trainee.workouts || trainee.workouts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 text-xs">עדיין לא נרשמו אימונים.</td></tr>`;
+                return;
+            }
+
+            trainee.workouts.forEach(w => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/30 transition";
+                tr.innerHTML = `
+                    <td class="py-3 pr-2 font-medium text-slate-300">${w.date}</td>
+                    <td class="py-3 font-bold text-white">${w.type}</td>
+                    <td class="py-3 text-brand-pink">${w.duration} דק'</td>
+                    <td class="py-3 text-slate-400">${w.notes || '-'}</td>
+                    <td class="py-3 pl-2">
+                        <button onclick="deleteWorkout(${w.id})" class="text-slate-500 hover:text-red-400 transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderProgressPhotos(trainee) {
+            const grid = document.getElementById('progress-photos-grid');
+            grid.innerHTML = '';
+
+            if (!trainee.photos || trainee.photos.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">טרם העלית תמונות התקדמות. לחצי על "העלי תמונה" למעלה.</div>`;
+                return;
+            }
+
+            trainee.photos.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "relative group rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 aspect-square shadow-md";
+                div.innerHTML = `
+                    <img src="${p.url}" alt="Progress" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent flex flex-col justify-end p-2">
+                        <span class="text-[10px] font-bold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-md self-start">${p.date}</span>
+                    </div>
+                    <button onclick="deletePhoto('${p.id}')" class="absolute top-2 left-2 bg-red-500/80 hover:bg-red-600 text-white w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                        <i class="fa-solid fa-trash text-[10px]"></i>
+                    </button>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function triggerSave(trainee) {
+            if (window.saveTraineeToCloud) {
+                window.saveTraineeToCloud(trainee);
+            } else {
+                localStorage.setItem('fitcarmit_trainees_data', JSON.stringify(window.trainees));
+            }
+        }
+
+        function saveProfileData(e) {
+            e.preventDefault();
+            const trainee = getActiveTrainee();
+
+            trainee.name = document.getElementById('input-name').value;
+            trainee.age = parseInt(document.getElementById('input-age').value);
+            trainee.height = parseFloat(document.getElementById('input-height').value);
+            trainee.weight = parseFloat(document.getElementById('input-weight').value);
+            trainee.targetWeight = parseFloat(document.getElementById('input-target-weight').value);
+            trainee.weeklyWorkouts = parseInt(document.getElementById('input-weekly-workouts').value);
+
+            triggerSave(trainee);
+            populateTraineeSelect();
+            updateAthleteUI();
+            showMessage('הנתונים נשמרו וסונכרנו בענן!');
+        }
+
+        function addSteps() {
+            const input = document.getElementById('input-steps-add');
+            const val = parseInt(input.value);
+            if (!val || val <= 0) return;
+
+            const trainee = getActiveTrainee();
+            trainee.stepsToday = (trainee.stepsToday || 0) + val;
+            input.value = '';
+
+            triggerSave(trainee);
+            updateAthleteUI();
+            showMessage('הצעדים עודכנו!');
+        }
+
+        function logWorkout() {
+            const type = document.getElementById('input-workout-type').value.trim();
+            const duration = document.getElementById('input-workout-duration').value;
+            const notes = document.getElementById('input-workout-notes').value.trim();
+
+            if (!type) {
+                showMessage('אנא הזיני סוג אימון');
+                return;
+            }
+
+            const trainee = getActiveTrainee();
+            if (!trainee.workouts) trainee.workouts = [];
+
+            trainee.workouts.unshift({
+                id: Date.now(),
+                date: new Date().toLocaleDateString('he-IL'),
+                type: type,
+                duration: duration || 45,
+                notes: notes
+            });
+
+            document.getElementById('input-workout-type').value = '';
+            document.getElementById('input-workout-duration').value = '';
+            document.getElementById('input-workout-notes').value = '';
+
+            triggerSave(trainee);
+            updateAthleteUI();
+            showMessage('אימון נוסף בהצלחה!');
+        }
+
+        function deleteWorkout(id) {
+            const trainee = getActiveTrainee();
+            trainee.workouts = trainee.workouts.filter(w => w.id !== id);
+            triggerSave(trainee);
+            updateAthleteUI();
+        }
+
+        function addWeightEntry() {
+            const input = document.getElementById('input-new-weight-log');
+            const val = parseFloat(input.value);
+            if (!val) return;
+
+            const trainee = getActiveTrainee();
+            trainee.weight = val;
+            if (!trainee.weightHistory) trainee.weightHistory = [];
+
+            trainee.weightHistory.push({
+                date: new Date().toISOString().split('T')[0],
+                weight: val
+            });
+
+            input.value = '';
+            triggerSave(trainee);
+            updateAthleteUI();
+            showMessage('המשקל העדכני נשמר!');
+        }
+
+        function compressImage(base64Str) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max = 600;
+                    if (width > height && width > max) {
+                        height = Math.round((height * max) / width);
+                        width = max;
+                    } else if (height > max) {
+                        width = Math.round((width * max) / height);
+                        height = max;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                };
+            });
+        }
+
+        async function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const compressedUrl = await compressImage(event.target.result);
+                const trainee = getActiveTrainee();
+                if (!trainee.photos) trainee.photos = [];
+
+                trainee.photos.unshift({
+                    id: 'photo_' + Date.now(),
+                    url: compressedUrl,
+                    date: new Date().toLocaleDateString('he-IL')
+                });
+
+                triggerSave(trainee);
+                updateAthleteUI();
+                showMessage('תמונה הועלתה וסונכרנה בענן!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function deletePhoto(photoId) {
+            const trainee = getActiveTrainee();
+            trainee.photos = trainee.photos.filter(p => p.id !== photoId);
+            triggerSave(trainee);
+            updateAthleteUI();
+        }
+
+        function getRandomQuote() {
+            const randIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+            document.getElementById('motivational-quote').textContent = MOTIVATIONAL_QUOTES[randIndex];
+        }
+
+        window.updateCoachUI = function() {
+            document.getElementById('coach-total-trainees').textContent = window.trainees.length;
+            
+            let totalWorkouts = 0;
+            let totalSteps = 0;
+            window.trainees.forEach(t => {
+                totalWorkouts += (t.workouts ? t.workouts.length : 0);
+                totalSteps += (t.stepsToday || 0);
+            });
+
+            document.getElementById('coach-total-workouts').textContent = totalWorkouts;
+            const avgSteps = window.trainees.length ? Math.round(totalSteps / window.trainees.length) : 0;
+            document.getElementById('coach-avg-steps').textContent = avgSteps.toLocaleString();
+
+            renderTraineeCards(window.trainees);
+        };
+
+        function renderTraineeCards(list) {
+            const grid = document.getElementById('trainees-cards-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            if (list.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500">לא נמצאו מתאמנות.</div>`;
+                return;
+            }
+
+            list.forEach(t => {
+                const card = document.createElement('div');
+                card.className = "glass-card rounded-2xl p-5 border border-slate-800 hover:border-brand-pink/50 transition cursor-pointer flex flex-col justify-between space-y-4 group";
+                card.onclick = () => openTraineeModal(t.id);
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-pink to-brand-purple text-white font-bold text-base flex items-center justify-center shadow-md">
+                                ${t.name ? t.name.charAt(0) : 'T'}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white group-hover:text-brand-pink transition">${t.name}</h3>
+                                <span class="text-xs text-slate-400">גיל: ${t.age} | גובה: ${t.height} ס"מ</span>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-2.5 py-1 rounded-full">
+                            ${t.weeklyWorkouts || 3} אימונים/שבוע
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-center text-xs">
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">נוכחי / יעד</span>
+                            <span class="font-bold text-white">${t.weight} <span class="text-slate-500">/ ${t.targetWeight} ק"ג</span></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">צעדים היום</span>
+                            <span class="font-bold text-emerald-400">${(t.stepsToday || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400">
+                        <span>תמונות: <strong class="text-slate-200">${t.photos ? t.photos.length : 0}</strong></span>
+                        <span class="text-brand-pink font-semibold flex items-center gap-1">
+                            צפה בפרופיל <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                        </span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterTrainees() {
+            const query = document.getElementById('search-trainee-input').value.toLowerCase().trim();
+            const filtered = window.trainees.filter(t => t.name.toLowerCase().includes(query));
+            renderTraineeCards(filtered);
+        }
+
+        function openTraineeModal(traineeId) {
+            selectedModalTraineeId = traineeId;
+            const t = window.trainees.find(item => item.id === traineeId);
+            if (!t) return;
+
+            document.getElementById('modal-trainee-avatar').textContent = t.name ? t.name.charAt(0) : 'M';
+            document.getElementById('modal-trainee-name').textContent = t.name;
+            document.getElementById('modal-trainee-age').textContent = t.age;
+            document.getElementById('modal-trainee-height').textContent = `${t.height} ס"מ`;
+            document.getElementById('modal-trainee-target-workouts').textContent = `${t.weeklyWorkouts || 3} בשבוע`;
+
+            document.getElementById('modal-trainee-weight').textContent = `${t.weight} ק"ג`;
+            document.getElementById('modal-trainee-target-weight').textContent = `${t.targetWeight} ק"ג`;
+            
+            const bmr = Math.round((10 * t.weight) + (6.25 * t.height) - (5 * t.age) - 161);
+            document.getElementById('modal-trainee-bmr').textContent = bmr;
+            document.getElementById('modal-trainee-steps').textContent = (t.stepsToday || 0).toLocaleString();
+
+            document.getElementById('modal-coach-note-input').value = t.coachNote || '';
+
+            const photosContainer = document.getElementById('modal-trainee-photos');
+            photosContainer.innerHTML = '';
+            if (t.photos && t.photos.length > 0) {
+                t.photos.forEach(p => {
+                    const img = document.createElement('img');
+                    img.src = p.url;
+                    img.className = "w-full h-20 object-cover rounded-xl border border-slate-700";
+                    photosContainer.appendChild(img);
+                });
+            } else {
+                photosContainer.innerHTML = `<span class="text-xs text-slate-500 col-span-full">אין תמונות עדיין.</span>`;
+            }
+
+            const workoutsContainer = document.getElementById('modal-trainee-workouts');
+            workoutsContainer.innerHTML = '';
+            if (t.workouts && t.workouts.length > 0) {
+                t.workouts.forEach(w => {
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs flex justify-between items-center";
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-white">${w.type}</span>
+                            <span class="text-slate-400 block">${w.date} - ${w.notes || 'ללא הערות'}</span>
+                        </div>
+                        <span class="text-brand-pink font-semibold">${w.duration} דק'</span>
+                    `;
+                    workoutsContainer.appendChild(div);
+                });
+            } else {
+                workoutsContainer.innerHTML = `<span class="text-xs text-slate-500">אין אימונים מתועדים.</span>`;
+            }
+
+            document.getElementById('trainee-detail-modal').classList.remove('hidden');
+        }
+
+        function closeTraineeModal() {
+            document.getElementById('trainee-detail-modal').classList.add('hidden');
+        }
+
+        function saveCoachNote() {
+            if (!selectedModalTraineeId) return;
+            const t = window.trainees.find(item => item.id === selectedModalTraineeId);
+            if (t) {
+                t.coachNote = document.getElementById('modal-coach-note-input').value;
+                triggerSave(t);
+                closeTraineeModal();
+                updateCoachUI();
+                if (activeTraineeId === selectedModalTraineeId) {
+                    updateAthleteUI();
+                }
+                showMessage('ההערה נשמרה ונשלחה בלייב למתאמנת!');
+            }
+        }
+
+        function openAddTraineeModal() {
+            document.getElementById('add-trainee-modal').classList.remove('hidden');
+        }
+        function closeAddTraineeModal() {
+            document.getElementById('add-trainee-modal').classList.add('hidden');
+        }
+
+        function addNewTraineeFromModal(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('new-trainee-name').value;
+            const age = parseInt(document.getElementById('new-trainee-age').value);
+            const height = parseFloat(document.getElementById('new-trainee-height').value);
+            const weight = parseFloat(document.getElementById('new-trainee-weight').value);
+            const targetWeight = parseFloat(document.getElementById('new-trainee-target-weight').value);
+
+            const newTrainee = {
+                id: 'trainee_' + Date.now(),
+                name: name,
+                age: age,
+                height: height,
+                weight: weight,
+                targetWeight: targetWeight,
+                weeklyWorkouts: 3,
+                stepsToday: 0,
+                coachNote: 'ברוכה הבאה לתוכנית האימונים!',
+                weightHistory: [
+                    { date: new Date().toISOString().split('T')[0], weight: weight }
+                ],
+                workouts: [],
+                photos: []
+            };
+
+            window.trainees.push(newTrainee);
+            triggerSave(newTrainee);
+
+            closeAddTraineeModal();
+            populateTraineeSelect();
+            updateCoachUI();
+            showMessage('מתאמנת חדשה נוספה בהצלחה!');
+        }
+
+        function showMessage(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-6 right-6 z-50 bg-brand-pink text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl border border-white/20 transition-all duration-500 transform translate-y-4 opacity-0";
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 500);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
